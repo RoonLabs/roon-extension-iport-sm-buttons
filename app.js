@@ -101,7 +101,8 @@ function makelayout(settings) {
         i++;
         let group = {
             type:        "group",
-            title:       "Device: " + i,
+            id:          "dev" + i,
+            title:       "Device #" + i,
             collapsable: true,
             items:       [],
         };
@@ -122,12 +123,7 @@ function makelayout(settings) {
 
         let conn = sm.conn;
         if (conn) {
-            group.title = "Device: " + conn.deviceid;
-
-            group.items.push({
-                type:    "label",
-                title:   conn.model + " " + conn.version
-            });
+            group.title = conn.deviceid + "  (" + conn.model + " " + conn.version + ")";
 
             group.items.push({
                 type:    "zone",
@@ -137,6 +133,7 @@ function makelayout(settings) {
 
             let ledgroup = {
                 type:        "group",
+                id:          "leds" + i,
                 title:       "LEDs",
                 collapsable: true,
                 items: [],
@@ -193,7 +190,8 @@ function makelayout(settings) {
 
                 let keygroup = {
                     type:        "group",
-                    title:       "Key " + kvp.label.replace(/[^0-9]/g, ""),
+                    id:          "key" + i + "_" + key,
+                    title:       "Key " + key,
                     collapsable: true,
                     items: [],
                 };
