@@ -252,10 +252,10 @@ function update_status() {
     var conns = 0, inits = 0, total = 0;
     let i = 0;
     while (i < mysettings.devices) {
-        let ip = mysettings["ip" + i++];
-        if (!ip) continue;
+        let ip = mysettings["ip" + ++i];
+        if (!ip) { console.log('noip'); continue; }
         let sm = sms[ip];
-        if (!sm) continue; 
+        if (!sm) { console.log('nosm');continue; }
 
         total++;
         if (sm.conn) { conns++; continue; }
@@ -318,11 +318,16 @@ function ensure_connections(settings) {
         if (sm && (sm.conn || sm.net)) continue;
 
         sm = sms[ip] = {
-            idx:  i,
-            ip:   ip,
-            conn: undefined,
-            net:  new Net.Socket(),
+            idx:     i,
+            ip:      ip,
+            conn:    undefined,
+            pressed: { },
+            net:     new Net.Socket(),
         };
+
+        sm.pinger = setInterval(() => {
+            try { sm.net.write("\nled=?\n"); } catch (e) { }
+        });
 
         changed = true;
 
@@ -331,7 +336,7 @@ function ensure_connections(settings) {
             sm.net.connect(SM_BUTTONS_PORT, ip)
 
             sm.net.on('connect', () => {
-//                console.log("SM: connected");
+                console.log("SM: connected", ip);
 		update_status();
                 svc_settings.update_settings();
                 update_led(sm.ip, sm.idx);
@@ -340,20 +345,21 @@ function ensure_connections(settings) {
             sm.net.pipe(split())
                     .on('data', function (line) {
                         if (line[0] == '#') return;
+                        if (line.startsWith("led=")) return;
                         var msg = JSON.parse(line);
                         if (!sm.conn) {
-//                            console.log("SM: got first line");
+                            console.log("SM: got first line", ip);
                             sm.conn = msg;
                             update_status();
                             svc_settings.update_settings();
 
                         } else if (msg.events) {
-//                            console.log("SM: got event");
                             msg.events.forEach(e => {
+                            console.log("SM: got event", ip, e);
                                 if (e.state == '1')
-                                    ev_buttondown(idx, idx + "_" + e.label.replace(/[^0-9]/g, ''));
+                                    ev_buttondown(sm, e.label.replace(/[^0-9]/g, ''));
                                 else
-                                    ev_buttonup(idx, idx + "_" + e.label.replace(/[^0-9]/g, ''));
+                                    ev_buttonup(sm, e.label.replace(/[^0-9]/g, ''));
                             });
                         }
                     });
@@ -372,61 +378,63 @@ function ensure_connections(settings) {
 }
 
 function close_sm(ip) {
+    console.log("SM: closed", ip);
+    let sm = sms[ip];
     delete(sms[ip]);
-    sm = undefined;
+    try { sm.net.destroy(); } catch (e) { }
+    try { clearInterval(sm.pinger); } catch (e) { }
     update_status();
     svc_settings.update_settings();
 }
 
-var pressed = { };
 var pressseq = 0;
 
-function ev_buttondown(i, key) {
-    if (pressed[key]) return;
+function ev_buttondown(sm, key) {
+    if (sm.pressed[key]) return;
 //    console.log('sm clickdown: ' + key);
     var seq = ++pressseq;
-    pressed[key] = seq;
+    sm.pressed[key] = seq;
     setTimeout(() => {
-        if (seq != pressed[key]) return;
+        if (seq != sm.pressed[key]) return;
 //	console.log('sm longpress: ' + key);
-        pressed[key] = 'longpressed';
+        sm.pressed[key] = 'longpressed';
         if (!core) return;
         console.log('sm longpress: ' + key);
-        let k = "longpress" + key;
-        if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+i], 'playpause');
-        else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+i], 'relative', settings.seekamount);
-        else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+i], 'relative', settings.seekamount * -1);
-        else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+i], 'stop');
+        let k = "longpress" + sm.idx + "_" + key;
+        if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'playpause');
+        else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount);
+        else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount * -1);
+        else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'stop');
         else if (mysettings[k] == "pauseall")   core.services.RoonApiTransport.pause_all    ();
-        else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+i], 'next');
-        else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+i], 'previous');
-        else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+i], 'toggle');
-        else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+i], 'relative_step', settings.volumesteps);
-        else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+i], 'relative_step', settings.volumesteps * -1);
+        else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'next');
+        else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'previous');
+        else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+sm.idx], 'toggle');
+        else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps);
+        else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps * -1);
     }, mysettings.longpresstimeout);
 }
 
-function ev_buttonup(i, key) {
+function ev_buttonup(sm, key) {
 //    console.log('sm clickup: ' + key);
     if (!core) return;
-    if (!pressed[key]) return;
-    if (pressed[key] == "longpressed") {
-        delete(pressed[key]);
+    if (!sm.pressed[key]) return;
+    if (sm.pressed[key] == "longpressed") {
+        delete(sm.pressed[key]);
         return;
     }
-    delete(pressed[key]);
+    delete(sm.pressed[key]);
     console.log('sm press: ' + key);
-    let k = "press" + key;
-    if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+i], 'playpause');
-    else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+i], 'relative', settings.seekamount);
-    else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+i], 'relative', settings.seekamount * -1);
-    else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+i], 'stop');
+    let k = "press" + sm.idx + "_" + key;
+    if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'playpause');
+    else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount);
+    else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount * -1);
+    else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'stop');
     else if (mysettings[k] == "pauseall")   core.services.RoonApiTransport.pause_all    ();
-    else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+i], 'next');
-    else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+i], 'previous');
-    else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+i], 'toggle');
-    else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+i], 'relative_step', settings.volumesteps);
-    else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+i], 'relative_step', settings.volumesteps * -1);
+    else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'next');
+    else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'previous');
+    else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+sm.idx], 'toggle');
+    else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps);
+    else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps * -1);
 }
 
 ensure_connections(mysettings);
