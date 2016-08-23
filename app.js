@@ -44,6 +44,7 @@ var actions = [
 
 function makelayout(settings) {
     var l = {
+        values:    settings,
 	layout:    [],
 	has_error: false
     };
@@ -135,40 +136,36 @@ function makelayout(settings) {
                 type:        "group",
                 id:          "leds" + i,
                 title:       "LEDs",
-                collapsable: true,
+//                collapsable: true,
                 items: [],
             };
             group.items.push(ledgroup);
 
             // defaults
 	    if (!settings["led_playing_" + i]) settings["led_playing_" + i] = '#00FF00';
-	    if (!settings["led_paused_"  + i]) settings["led_paused_"  + i] = '#FFFF00';
 	    if (!settings["led_loading_" + i]) settings["led_loading_" + i] = '#00FFFF';
 	    if (!settings["led_stopped_" + i]) settings["led_stopped_" + i] = '#FFFFFF';
 
             ledgroup.items.push({
-                    type:    "dropdown",
-                    title:   "Music Playing Color",
-                    setting: "led_playing_" + i,
-                    values: colorvalues
+                type:           "dropdown",
+                title:          "Music Playing Color",
+                setting:        "led_playing_" + i,
+                values:         colorvalues,
+                needs_feedback: true
             });
             ledgroup.items.push({
-                    type:    "dropdown",
-                    title:   "Music Paused Color",
-                    setting: "led_paused_" + i,
-                    values: colorvalues
+                type:           "dropdown",
+                title:          "Music Loading Color",
+                setting:        "led_loading_" + i,
+                values:         colorvalues,
+                needs_feedback: true
             });
             ledgroup.items.push({
-                    type:    "dropdown",
-                    title:   "Music Loading Color",
-                    setting: "led_loading_" + i,
-                    values: colorvalues
-            });
-            ledgroup.items.push({
-                    type:    "dropdown",
-                    title:   "Music Stopped Color",
-                    setting: "led_stopped_" + i,
-                    values: colorvalues
+                type:           "dropdown",
+                title:          "Default Color",
+                setting:        "led_stopped_" + i,
+                values:         colorvalues,
+                needs_feedback: true
             });
 
             let limit = 0;
@@ -223,21 +220,40 @@ function makelayout(settings) {
 
 var svc_settings = new RoonApiSettings(roon, {
     get_settings: function(cb) {
-        cb(mysettings, makelayout(mysettings).layout);
+        cb(makelayout(mysettings));
     },
     save_settings: function(req, isdryrun, settings) {
-        ensure_connections(settings);
-	let l = makelayout(settings);
-	if (l.has_error) {
-	    req.send_complete("NotValid", { settings: settings, layout: l.layout });
-            return;
-        }
-        req.send_complete("Success", { settings: settings, layout: l.layout });
+        ensure_connections(settings.values);
 
-        if (!isdryrun) {
-            mysettings = settings;
+	let l = makelayout(settings.values);
+        req.send_complete(l.has_error ? "NotValid" : "Success", { settings: l });
+
+        if (settings.feedback) {
+            for (var i in settings.feedback) {
+                let propname = i;
+                let propval = settings.feedback[i];
+                var m = propname.match(/^led_[^_]+_([0-9]+)$/);
+                if (m) {
+                    let idx = m[1];
+                    for (var ip in sms) {
+                        let sm = sms[ip];
+                        if (sm.idx == idx) {
+                            sm.net.write('\nled=' + propval + '\n');
+                            setTimeout(() => {
+                                update_led(sm.ip, sm.idx, true);
+                            }, 1000);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        if (!isdryrun && !l.has_error) {
+            mysettings = l.values;
             update_status();
-            svc_settings.update_settings(mysettings, l.layout);
+            svc_settings.update_settings(l);
             for (var ip in sms) update_led(ip, sms[ip].idx);
             roon.save_config("settings", mysettings);
         }
@@ -251,9 +267,9 @@ function update_status() {
     let i = 0;
     while (i < mysettings.devices) {
         let ip = mysettings["ip" + ++i];
-        if (!ip) { console.log('noip'); continue; }
+        if (!ip) continue;
         let sm = sms[ip];
-        if (!sm) { console.log('nosm');continue; }
+        if (!sm) continue;
 
         total++;
         if (sm.conn) { conns++; continue; }
@@ -285,7 +301,7 @@ function update_status() {
     svc_status.set_status(s + ".", err);
 }
 
-function update_led(ip, idx) {
+function update_led(ip, idx, force) {
     let sm = sms[ip]; 
     if (!sm || !sm.net) return;
 
@@ -295,12 +311,11 @@ function update_led(ip, idx) {
     var zone = core.services.RoonApiTransport.zone_by_object(z);
     if (!zone) { if (mysettings['led_stopped_' + idx]) sm.net.write('\nled=' + mysettings['led_stopped_' + idx] + '\n'); return; }
 
-    if (sm.zonestate == zone.state) return;
+    if (sm.zonestate == zone.state && !force) return;
     sm.zonestate = zone.state;
     if      (zone.state == "playing" && mysettings['led_playing_' + idx]) sm.net.write('\nled=' + mysettings['led_playing_' + idx] + '\n');
-    else if (zone.state == "paused"  && mysettings['led_paused_'  + idx]) sm.net.write('\nled=' + mysettings['led_paused_'  + idx] + '\n');
     else if (zone.state == "loading" && mysettings['led_loading_' + idx]) sm.net.write('\nled=' + mysettings['led_loading_' + idx] + '\n');
-    else if (zone.state == "stopped" && mysettings['led_stopped_' + idx]) sm.net.write('\nled=' + mysettings['led_stopped_' + idx] + '\n');
+    else if (                           mysettings['led_stopped_' + idx]) sm.net.write('\nled=' + mysettings['led_stopped_' + idx] + '\n');
 }
 
 function ensure_connections(settings) {
