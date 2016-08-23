@@ -1,4 +1,4 @@
-    "use strict";
+"use strict";
 
 var Net              = require('net'),
     split            = require('split'),
@@ -19,6 +19,28 @@ var mysettings = roon.load_config("settings") || {
     seekamount:       5,
     volumesteps:      5
 };
+
+var colorvalues = [
+    { title: "White",   value: "#FFFFFF" }, { title: "Red",    value: "#FF0000" },
+    { title: "Green",   value: "#00FF00" }, { title: "Blue",   value: "#0000FF" },
+    { title: "Yellow",  value: "#FFFF00" }, { title: "Cyan",   value: "#00FFFF" },
+    { title: "Magenta", value: "#FF00FF" }, { title: "Orange", value: "#FF8000" },
+    { title: "Pink",    value: "#FFB6C1" }, { title: "None",   value: "#000000" },
+];
+
+var actions = [
+    { title: "Play/Pause",    value: "toggleplay"   },
+    { title: "Stop",          value: "stop"         },
+    { title: "Next",          value: "next"         },
+    { title: "Preivous",      value: "previous"     },
+    { title: "Seek Forward",  value: "seekfwd"      },
+    { title: "Seek Backward", value: "seekback"     },
+    { title: "Pause All",     value: "pauseall"     },
+    { title: "Toggle Mute",   value: "togglemute"   },
+    { title: "Volume Up",     value: "volumeup"     },
+    { title: "Volume Down",   value: "volumedown"   },
+    { title: "Nothing",       value: "none"         },
+];
 
 function makelayout(settings) {
     var l = {
@@ -131,69 +153,25 @@ function makelayout(settings) {
                     type:    "dropdown",
                     title:   "Music Playing Color",
                     setting: "led_playing_" + i,
-                    values: [
-                        { title: "White",   value: "#FFFFFF" },
-                        { title: "Red",     value: "#FF0000" },
-                        { title: "Green",   value: "#00FF00" },
-                        { title: "Blue",    value: "#0000FF" },
-                        { title: "Yellow",  value: "#FFFF00" },
-                        { title: "Cyan",    value: "#00FFFF" },
-                        { title: "Magenta", value: "#FF00FF" },
-                        { title: "Orange",  value: "#FF8000" },
-                        { title: "Pink",    value: "#FFB6C1" },
-                        { title: "None",    value: "#000000" },
-                    ]
+                    values: colorvalues
             });
             ledgroup.items.push({
                     type:    "dropdown",
                     title:   "Music Paused Color",
                     setting: "led_paused_" + i,
-                    values: [
-                        { title: "White",   value: "#FFFFFF" },
-                        { title: "Red",     value: "#FF0000" },
-                        { title: "Green",   value: "#00FF00" },
-                        { title: "Blue",    value: "#0000FF" },
-                        { title: "Yellow",  value: "#FFFF00" },
-                        { title: "Cyan",    value: "#00FFFF" },
-                        { title: "Magenta", value: "#FF00FF" },
-                        { title: "Orange",  value: "#FF8000" },
-                        { title: "Pink",    value: "#FFB6C1" },
-                        { title: "None",    value: "#000000" },
-                    ]
+                    values: colorvalues
             });
             ledgroup.items.push({
                     type:    "dropdown",
                     title:   "Music Loading Color",
                     setting: "led_loading_" + i,
-                    values: [
-                        { title: "White",   value: "#FFFFFF" },
-                        { title: "Red",     value: "#FF0000" },
-                        { title: "Green",   value: "#00FF00" },
-                        { title: "Blue",    value: "#0000FF" },
-                        { title: "Yellow",  value: "#FFFF00" },
-                        { title: "Cyan",    value: "#00FFFF" },
-                        { title: "Magenta", value: "#FF00FF" },
-                        { title: "Orange",  value: "#FF8000" },
-                        { title: "Pink",    value: "#FFB6C1" },
-                        { title: "None",    value: "#000000" },
-                    ]
+                    values: colorvalues
             });
             ledgroup.items.push({
                     type:    "dropdown",
                     title:   "Music Stopped Color",
                     setting: "led_stopped_" + i,
-                    values: [
-                        { title: "White",   value: "#FFFFFF" },
-                        { title: "Red",     value: "#FF0000" },
-                        { title: "Green",   value: "#00FF00" },
-                        { title: "Blue",    value: "#0000FF" },
-                        { title: "Yellow",  value: "#FFFF00" },
-                        { title: "Cyan",    value: "#00FFFF" },
-                        { title: "Magenta", value: "#FF00FF" },
-                        { title: "Orange",  value: "#FF8000" },
-                        { title: "Pink",    value: "#FFB6C1" },
-                        { title: "None",    value: "#000000" },
-                    ]
+                    values: colorvalues
             });
 
             let limit = 0;
@@ -225,37 +203,13 @@ function makelayout(settings) {
                     type:    "dropdown",
                     title:   "Press Action",
                     setting: "press" + i + "_" + key,
-                    values: [
-                    { title: "Toggle Play/Pause", value: "toggleplay"   },
-                    { title: "Seek Forward",      value: "seekfwd"      },
-                    { title: "Seek Backward",     value: "seekback"     },
-                    { title: "Stop Playback",     value: "stop"         },
-                    { title: "Pause All",         value: "pauseall"     },
-                    { title: "Next Track",        value: "next"         },
-                    { title: "Preivous Track",    value: "previous"     },
-                    { title: "Toggle Mute",       value: "togglemute"   },
-                    { title: "Volume Up",         value: "volumeup"     },
-                    { title: "Volume Down",       value: "volumedown"   },
-                    { title: "Nothing",           value: "none"         },
-                    ]
+                    values:  actions
                 });
                 keygroup.items.push({
                     type:    "dropdown",
                     title:   "Long Press Action",
                     setting: "longpress" + i + "_" + key,
-                    values: [
-                    { title: "Toggle Play/Pause", value: "toggleplay"   },
-                    { title: "Seek Forward",      value: "seekfwd"      },
-                    { title: "Seek Backward",     value: "seekback"     },
-                    { title: "Stop Playback",     value: "stop"         },
-                    { title: "Pause All",         value: "pauseall"     },
-                    { title: "Next Track",        value: "next"         },
-                    { title: "Preivous Track",    value: "previous"     },
-                    { title: "Toggle Mute",       value: "togglemute"   },
-                    { title: "Volume Up",         value: "volumeup"     },
-                    { title: "Volume Down",       value: "volumedown"   },
-                    { title: "Nothing",           value: "none"         },
-                    ]
+                    values:  actions
                 });
             });
         } else if (sm.net) {
@@ -298,16 +252,12 @@ function update_status() {
     var conns = 0, inits = 0, total = 0;
     let i = 0;
     while (i < mysettings.devices) {
-        i++;
-
-        let ip = mysettings["ip" + i];
-
+        let ip = mysettings["ip" + i++];
         if (!ip) continue;
         let sm = sms[ip];
         if (!sm) continue; 
 
         total++;
-
         if (sm.conn) { conns++; continue; }
         if (sm.net)  { inits++; continue; }
     }
@@ -334,9 +284,7 @@ function update_status() {
             err = true;
         }
     }
-    s += '.';
-
-    svc_status.set_status(s, err);
+    svc_status.set_status(s + ".", err);
 }
 
 function update_led(ip, idx) {
@@ -398,6 +346,7 @@ function ensure_connections(settings) {
                             sm.conn = msg;
                             update_status();
                             svc_settings.update_settings();
+
                         } else if (msg.events) {
 //                            console.log("SM: got event");
                             msg.events.forEach(e => {
@@ -408,26 +357,12 @@ function ensure_connections(settings) {
                             });
                         }
                     });
-            sm.net.on('error', function(msg) {
-                console.log("SM ERROR", msg);
-                delete(sms[ip]);
-                sm = undefined;
-                update_status();
-                svc_settings.update_settings();
-            });
-            sm.net.on('end', () => {
-                delete(sms[ip]);
-                sm = undefined;
-                update_status();
-                svc_settings.update_settings();
-            });
+            sm.net.on('error', function(msg) { console.log("SM ERROR", msg); close_sm(ip); });
+            sm.net.on('end', () => { close_sm(ip); });
 
         } catch (e) {
             sm.net.destroy();
-            delete(sms[ip]);
-            sm = undefined;
-            update_status();
-            svc_settings.update_settings();
+            close_sm(ip);
         }
     }
     if (changed) {
@@ -436,8 +371,14 @@ function ensure_connections(settings) {
     }
 }
 
+function close_sm(ip) {
+    delete(sms[ip]);
+    sm = undefined;
+    update_status();
+    svc_settings.update_settings();
+}
+
 var pressed = { };
-var ignoreup;
 var pressseq = 0;
 
 function ev_buttondown(i, key) {
@@ -509,7 +450,7 @@ var extension = roon.extension({
         });
     },
     core_unpaired: function(core_) {
-	core = undefined;
+	core  = undefined;
         zones = {};
     }
 });
