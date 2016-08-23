@@ -1,0 +1,16 @@
+{
+  "name": "roon-extension-iport-sm-buttons",
+  "version": "1.0.0",
+  "description": "Roon Extension to let the iPort Surface Mount with Buttons control Roon",
+  "main": "app.js",
+  "author": "Roon Labs, LLC",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "net": "^1.0.2",
+    "split": "^1.0.0",
+    "node-roon-api": "github:roonlabs/node-roon-api",
+    "node-roon-api-settings": "github:roonlabs/node-roon-api-settings",
+    "node-roon-api-status": "github:roonlabs/node-roon-api-status",
+    "node-roon-api-transport": "github:roonlabs/node-roon-api-transport"
+  }
+}
