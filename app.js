@@ -102,7 +102,6 @@ function makelayout(settings) {
         i++;
         let group = {
             type:        "group",
-            id:          "dev" + i,
             title:       "Device #" + i,
             collapsable: true,
             items:       [],
@@ -134,7 +133,6 @@ function makelayout(settings) {
 
             let ledgroup = {
                 type:        "group",
-                id:          "leds" + i,
                 title:       "LEDs",
 //                collapsable: true,
                 items: [],
@@ -187,7 +185,6 @@ function makelayout(settings) {
 
                 let keygroup = {
                     type:        "group",
-                    id:          "key" + i + "_" + key,
                     title:       "Key " + key,
                     collapsable: true,
                     items: [],
