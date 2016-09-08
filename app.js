@@ -10,7 +10,28 @@ var Net              = require('net'),
 var SM_BUTTONS_PORT = 10001;
 var core;
 var zones = {};
-var roon = new RoonApi();
+var roon = new RoonApi({
+    extension_id:        'com.roonlabs.iport.smbuttons_controller',
+    display_name:        'iPort Surface Mount with Buttons controller',
+    display_version:     "1.0.0",
+    publisher:           'Roon Labs, LLC',
+    email:               'contact@roonlabs.com',
+    website:             'https://github.com/RoonLabs/roon-extension-iport-sm-buttons',
+    required_services:   [ RoonApiTransport ],
+    optional_services:   [ ],
+    provided_services:   [ svc_settings, svc_status ],
+
+    core_paired: function(core_) {
+        core = core_;
+        core.services.RoonApiTransport.subscribe_zones((response, msg) => {
+            for (var ip in sms) update_led(ip, sms[ip].idx);
+        });
+    },
+    core_unpaired: function(core_) {
+	core  = undefined;
+        zones = {};
+    }
+});
 var sms = { };
 
 var mysettings = roon.load_config("settings") || {
@@ -449,28 +470,5 @@ function ev_buttonup(sm, key) {
 
 ensure_connections(mysettings);
 setInterval(() => ensure_connections(mysettings), 1000);
-
-var extension = roon.extension({
-    extension_id:        'com.roonlabs.iport.smbuttons_controller',
-    display_name:        'iPort Surface Mount with Buttons controller',
-    display_version:     "1.0.0",
-    publisher:           'Roon Labs, LLC',
-    email:               'contact@roonlabs.com',
-    website:             'https://github.com/RoonLabs/roon-extension-iport-sm-buttons',
-    required_services:   [ RoonApiTransport ],
-    optional_services:   [ ],
-    provided_services:   [ svc_settings, svc_status ],
-
-    core_paired: function(core_) {
-        core = core_;
-        core.services.RoonApiTransport.subscribe_zones((response, msg) => {
-            for (var ip in sms) update_led(ip, sms[ip].idx);
-        });
-    },
-    core_unpaired: function(core_) {
-	core  = undefined;
-        zones = {};
-    }
-});
 
 roon.start_discovery();
