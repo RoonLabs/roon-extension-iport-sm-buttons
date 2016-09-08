@@ -412,15 +412,15 @@ function ev_buttondown(sm, key) {
         console.log('sm longpress: ' + key);
         let k = "longpress" + sm.idx + "_" + key;
         if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'playpause');
-        else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount);
-        else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount * -1);
+        else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', mysettings.seekamount);
+        else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', mysettings.seekamount * -1);
         else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'stop');
         else if (mysettings[k] == "pauseall")   core.services.RoonApiTransport.pause_all    ();
         else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'next');
         else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'previous');
         else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+sm.idx], 'toggle');
-        else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps);
-        else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps * -1);
+        else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', mysettings.volumesteps);
+        else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', mysettings.volumesteps * -1);
     }, mysettings.longpresstimeout);
 }
 
@@ -436,15 +436,15 @@ function ev_buttonup(sm, key) {
     console.log('sm press: ' + key);
     let k = "press" + sm.idx + "_" + key;
     if      (mysettings[k] == "toggleplay") core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'playpause');
-    else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount);
-    else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', settings.seekamount * -1);
+    else if (mysettings[k] == "seekfwd")    core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', mysettings.seekamount);
+    else if (mysettings[k] == "seekback")   core.services.RoonApiTransport.seek         (mysettings['zone'+sm.idx], 'relative', mysettings.seekamount * -1);
     else if (mysettings[k] == "stop")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'stop');
     else if (mysettings[k] == "pauseall")   core.services.RoonApiTransport.pause_all    ();
     else if (mysettings[k] == "next")       core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'next');
     else if (mysettings[k] == "previous")   core.services.RoonApiTransport.control      (mysettings['zone'+sm.idx], 'previous');
     else if (mysettings[k] == "togglemute") core.services.RoonApiTransport.mute         (mysettings['zone'+sm.idx], 'toggle');
-    else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps);
-    else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', settings.volumesteps * -1);
+    else if (mysettings[k] == "volumeup")   core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', mysettings.volumesteps);
+    else if (mysettings[k] == "volumedown") core.services.RoonApiTransport.change_volume(mysettings['zone'+sm.idx], 'relative_step', mysettings.volumesteps * -1);
 }
 
 ensure_connections(mysettings);
